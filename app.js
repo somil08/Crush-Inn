@@ -10,7 +10,7 @@ const ExpressError = require("./utils/ExpressError.js")
 const {listingSChema}=require("./schema.js")
 // mongoDb setup :----------------------------------------------------------------------------------------------------
 const mongoose = require("mongoose");
-const { Console } = require("console");
+const { Console } = require("console ");
 const MONGO_url =  'mongodb://127.0.0.1:27017/crush1'
 main().then(res => {
     console.log("connection is successfull")
