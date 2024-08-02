@@ -5,7 +5,7 @@
  
  module.exports.index =async (req, res) => {
      const AllListings = await Listing.find({});
-     res.render("listings/index.ejs", { AllListings });
+     res.render("listings/index.ejs", { AllListings }); 
    }
    module.exports.renderNewFrom =async (req, res) => {
      res.render("listings/new.ejs");
@@ -36,6 +36,7 @@
      newListing.owner = req.user._id;
      newListing.image = {url,filename};
      newListing.geometry = Response.body.features[0].geometry;
+     console.log(newListing.geometry )
       let savelisting = await newListing.save();
       console.log(savelisting)
      req.flash("success", "New Listing Created !");

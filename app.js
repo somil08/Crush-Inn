@@ -4,15 +4,15 @@ if (process.env.NODE_ENV != "production") {
 const Listing = require("./models/listing.js");
 const express = require("express");
 const app = express();
-const port = 8080;
+const port = 8080; 
 const path = require("path");
 const methodOverride = require("method-override");
-const ejsMate = require("ejs-mate");
+const ejsMate = require("ejs-mate"); 
 const ExpressError = require("./utils/ExpressError.js");
-const session = require("express-session");
+const session = require("express-session");  
 const MongoStore = require('connect-mongo');
 const flash = require("connect-flash");
-const passport = require("passport");
+const passport = require("passport"); 
 const LocalStrategy = require("passport-local");
 const User = require("./models/user.js");
 
@@ -39,7 +39,7 @@ app.set("views", path.join(__dirname, "views"));
 app.use(express.static(path.join(__dirname, "public")));
 app.use(express.urlencoded({ extended: true }));
 app.use(methodOverride("_method"));
-app.engine("ejs", ejsMate);
+app.engine("ejs", ejsMate); 
 
  const store = MongoStore.create({
   mongoUrl:Db_url,
