@@ -1,10 +1,18 @@
 <% layout("/layouts/boilerplate") -%>
 
+<<<<<<< HEAD
 <body>
     <div class="row mt-3">
         <div class="col-8 offset-2">
             <h3>Create a New listing</h3>
             <form method="POST" action="/listings" class="needs-validation" novalidate enctype="multipart/form-data" >
+=======
+    <body>
+        <div class="row mt-3">
+            <div class="col-8 offset-2">
+                <h3>Create a New listing</h3>
+                <form method="POST" action="/listings" class="needs-validation" novalidate enctype="multipart/form-data" >
+>>>>>>> b0d1ccb (Add Project Files)
                     <div class="mb-3">
                         <label for="title" class="form-label">Title</label>
                         <input name="listing[title]" placeholder="Add Title" type="text" class="form-control" required/>
@@ -23,7 +31,7 @@
                     <div class="row">
                         <div class="mb-3 col-md-4">
                             <label for="price" class="form-label">Price</label>
-                            <input name="listing[price]" placeholder="1200" type="number"  class="form-control" required/>
+                            <input name="listing[price]" placeholder="1200"  class="form-control" required/>
                             <div class="invalid-feedback">Price should be valid !</div>
                         </div>
                         <div class="mb-3 col-md-8">
