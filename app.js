@@ -1,102 +1,117 @@
+if (process.env.NODE_ENV != "production") {
+  require("dotenv").config();
+}
+const Listing = require("./models/listing.js");
 const express = require("express");
 const app = express();
 const port = 8080;
 const path = require("path");
-const Listing = require("./models/listing.js")
 const methodOverride = require("method-override");
-const ejsMate = require('ejs-mate')
-const wrapAsync = require("./utils/wrapAsync.js")
-const ExpressError = require("./utils/ExpressError.js")
-const {listingSChema}=require("./schema.js")
+const ejsMate = require("ejs-mate");
+const ExpressError = require("./utils/ExpressError.js");
+const session = require("express-session");
+const MongoStore = require('connect-mongo');
+const flash = require("connect-flash");
+const passport = require("passport");
+const LocalStrategy = require("passport-local");
+const User = require("./models/user.js");
+
+const listingsRouter = require("./routes/listings.js");
+const reviewsRouter = require("./routes/reviews.js");
+const usersRouter = require("./routes/users.js");
 // mongoDb setup :----------------------------------------------------------------------------------------------------
 const mongoose = require("mongoose");
-const { Console } = require("console ");
-const MONGO_url =  'mongodb://127.0.0.1:27017/crush1'
-main().then(res => {
-    console.log("connection is successfull")
-}).catch(err => console.log(err));
- 
+// const MONGO_url = "mongodb://127.0.0.1:27017/crush1";
+const Db_url = process.env.ATLASDB_URL
+
+main()
+  .then((res) => {
+    console.log("connection is successfull");
+  })
+  .catch((err) => console.log(err));
+
 async function main() {
-    await mongoose.connect(MONGO_url);
-} 
+  await mongoose.connect(Db_url);
+}
 // ---------------------------------------------------------------------------------------------------------------------
-app.set("view engine","ejs");
-app.set("views",path.join(__dirname,"views"));
-app.use(express.static(path.join(__dirname,"public")));
-app.use(express.urlencoded({extended:true}))
+app.set("view engine", "ejs");
+app.set("views", path.join(__dirname, "views"));
+app.use(express.static(path.join(__dirname, "public")));
+app.use(express.urlencoded({ extended: true }));
 app.use(methodOverride("_method"));
-app.engine('ejs', ejsMate); 
-// -----------------------------------------------------------------------------------------------------------------------
-// const validatelisting = (req,res,next)=>{
-//     let{error} = listingSchema.validate(req.body);
-//     if(error){
-//         let errMsg= error.details.map((el)=>el.message).join(",");
-//         throw new ExpressError(404,errMsg)
+app.engine("ejs", ejsMate);
 
-//     }else{
-//         next();
-//     }
-// }; 
-// ----------------------------------------------------------------------------------------------------------------------- 
-// index Route 
-app.get("/listings",wrapAsync( async(req,res,)=>{
-   const AllListings = await Listing.find({});
-   res.render("listings/index.ejs",{AllListings});
-}))
-// create(new) Route 
-app.get("/listings/new",wrapAsync(async (req,res,)=>{
-    res.render("listings/new.ejs")
-}))
+ const store = MongoStore.create({
+  mongoUrl:Db_url,
+  crypto:{
+    secret:process.env.SECRET
+  },
+  touchAfter:24*3600,
+})
+store.on("error",()=>{
+  console.log("ERROR IN MONGO SESSION STORE",err)
+});
 
-// show Route
-app.get("/listings/:id",wrapAsync(async (req,res,)=>{
-const {id} = req.params;
- const listing = await Listing.findById(id)
-res.render("listings/show.ejs",{listing})
-}))
-// create Route
-app.post("/listings",wrapAsync(async(req,res,next)=>{
-    if(!req.body.listing){
-    throw new ExpressError(400,"send valid data from listings") 
-    }
-const  newListing = await new Listing(req.body.listing)
-await newListing.save() 
-    res.redirect("/listings")
-}))
-// edit Route
-app.get("/listing/:id/edit",wrapAsync(async (req,res,)=>{
-    const {id} = req.params;
-    const listing = await Listing.findById(id)
-res.render("listings/edit.ejs",{listing});
-}))
-// update Route 
-app.put("/listings/:id",wrapAsync(async(req,res,)=>{
-    if(!req.body.listing){
-        throw new ExpressError(400,"send valid data for listings")
-    }
-    const {id} = req.params;
-    const listing = await Listing.findByIdAndUpdate(id,{...req.body.listing});
-    res.redirect(`/listings/${id}`);
-}))
-// delete Route
-app.delete("/listing/:id",wrapAsync(async (req,res,)=>{
-    const {id}= req.params;
-    const listing = await Listing.findByIdAndDelete(id);
-    res.redirect(`/listings`);
+const sessionOptions = {
+  store,
+  secret: process.env.SECRET,
+  resave: false,
+  saveUninitialized: true,
+  cookie: {
+    expires: Date.now() + 7 * 24 * 60 * 60 * 1000,
+    maxAge: 7 * 24 * 60 * 60 * 1000,
+    httpOnly: true,
+  },
+};
+app.use(session(sessionOptions));
+app.use(flash());
+app.use(passport.initialize());
+app.use(passport.session());
+// use static authenticate method of model in LocalStrategy
+passport.use(new LocalStrategy(User.authenticate()));
 
-}))
+// use static serialize and deserialize of model for passport session support
+passport.serializeUser(User.serializeUser());
+passport.deserializeUser(User.deserializeUser());
+
+app.use((req, res, next) => {
+  res.locals.success = req.flash("success");
+  res.locals.error = req.flash("error");
+  res.locals.curruser = req.user;
+  next();
+});
+
+app.use("/listings", listingsRouter);
+app.use("/listings/:id/reviews", reviewsRouter);
+app.use("/", usersRouter);
+
+app.get("/location",async(req,res)=>{
+  // let {location} = req.query;
+  // console.log(location)
+
+  // const listing =  await Listing.find({ location:`${location}` });
+  // console.log(listing)
+  let { location } = req.query;
+  console.log(location);
+  const listings = await Listing.find({ location: `${location}` })
+console.log(listings);
+      // const title = listings[0].title;
+      // const price = listings[0].price;
+      // // Do something with this data
+      // console.log(`Title: ${title}, Price: ${price}`);
+  res.render("listings/search.ejs",{listings})
+})
+
+
 // ------------------------------------------------------------------------------------------------------------------
-app.all("*",(req,res,next)=>{
-next( new ExpressError (404,"page not found!"))
-})
-app.use((err,req,res,next)=>{
-    // console.log(err)
-    let {statuscode= 505,message="something want wrong"} = err 
-// res.status(statuscode).send(message)
-res.render("listings/error.ejs" ,{err})
 
-})
-app.listen(port,()=>{
-    console.log("app was listenning");
-})
-     
+app.all("*", (req, res, next) => {
+  next(new ExpressError(404, "page not found!"));
+});
+app.use((err, req, res, next) => {
+  let { statuscode = 505, message = "something want wrong" } = err;
+  res.status(statuscode).render("listings/error.ejs", { message });
+});
+app.listen(port, () => {
+  console.log("app was listenning");
+});
